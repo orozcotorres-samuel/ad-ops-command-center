@@ -1,0 +1,17 @@
+# Python virtual environment
+.venv/
+
+# Secrets — never commit your API key
+.env
+
+# Data files (too big / not ours to redistribute)
+data/*.csv
+data/*.parquet
+data/*.gz
+data/*.txt
+*.duckdb
+
+# Python cruft
+__pycache__/
+*.pyc
+.DS_Store
