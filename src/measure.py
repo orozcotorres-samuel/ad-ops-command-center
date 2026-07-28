@@ -243,6 +243,21 @@ def _row_key(row: MeasurementRow) -> tuple:
     return (row.arm, row.window_days, row.end_date)
 
 
+def save_measurement(measurement: Measurement, out_file: Path) -> None:
+    """
+    Write results ATOMICALLY: full write to a temp file, then rename over the real one.
+
+    This matters because we save after every single run. A plain write truncates
+    the file first, so being killed mid-write would leave a half-written JSON file
+    and destroy EVERY run in it. Renaming is atomic on macOS/Linux, so the results
+    file is always either the old complete version or the new complete version —
+    never a corrupted one.
+    """
+    tmp = out_file.with_suffix(out_file.suffix + ".tmp")
+    tmp.write_text(measurement.model_dump_json(indent=2))
+    tmp.replace(out_file)
+
+
 def run_sweep(limit: Optional[int] = None, model: str = MODEL,
               out_file: Path = RESULTS_FILE, force: bool = False) -> Measurement:
     """
@@ -303,7 +318,7 @@ def run_sweep(limit: Optional[int] = None, model: str = MODEL,
                   f"{row.n_attempts} draft{'s' if row.n_attempts > 1 else ''})")
 
         # Save after EVERY run so nothing already paid for can be lost.
-        out_file.write_text(measurement.model_dump_json(indent=2))
+        save_measurement(measurement, out_file)
 
     return measurement
 
