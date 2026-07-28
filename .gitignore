@@ -4,11 +4,9 @@
 # Secrets — never commit your API key
 .env
 
-# Data files (too big / not ours to redistribute)
-data/*.csv
-data/*.parquet
-data/*.gz
-data/*.txt
+# Data files (too big / not ours to redistribute) — ignore everything in data/
+data/*
+!data/.gitkeep
 *.duckdb
 
 # Python cruft
