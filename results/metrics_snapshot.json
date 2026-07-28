@@ -1,0 +1,155 @@
+{
+  "start_date": "2024-01-18",
+  "end_date": "2024-01-31",
+  "total_impressions": 217715,
+  "total_clicks": 80388,
+  "overall_ctr": 0.3692,
+  "total_conversions": 10847,
+  "total_spend": 67.42,
+  "days": [
+    {
+      "date": "2024-01-18",
+      "impressions": 13670,
+      "clicks": 5185,
+      "ctr": 0.3793,
+      "conversions": 679,
+      "spend": 4.2
+    },
+    {
+      "date": "2024-01-19",
+      "impressions": 16474,
+      "clicks": 6189,
+      "ctr": 0.3757,
+      "conversions": 798,
+      "spend": 5.31
+    },
+    {
+      "date": "2024-01-20",
+      "impressions": 17623,
+      "clicks": 6537,
+      "ctr": 0.3709,
+      "conversions": 906,
+      "spend": 5.67
+    },
+    {
+      "date": "2024-01-21",
+      "impressions": 16727,
+      "clicks": 6151,
+      "ctr": 0.3677,
+      "conversions": 847,
+      "spend": 5.51
+    },
+    {
+      "date": "2024-01-22",
+      "impressions": 16977,
+      "clicks": 6278,
+      "ctr": 0.3698,
+      "conversions": 875,
+      "spend": 5.4
+    },
+    {
+      "date": "2024-01-23",
+      "impressions": 16051,
+      "clicks": 5860,
+      "ctr": 0.3651,
+      "conversions": 823,
+      "spend": 4.92
+    },
+    {
+      "date": "2024-01-24",
+      "impressions": 15318,
+      "clicks": 5631,
+      "ctr": 0.3676,
+      "conversions": 779,
+      "spend": 4.68
+    },
+    {
+      "date": "2024-01-25",
+      "impressions": 13045,
+      "clicks": 4945,
+      "ctr": 0.3791,
+      "conversions": 595,
+      "spend": 3.96
+    },
+    {
+      "date": "2024-01-26",
+      "impressions": 15443,
+      "clicks": 5756,
+      "ctr": 0.3727,
+      "conversions": 733,
+      "spend": 4.57
+    },
+    {
+      "date": "2024-01-27",
+      "impressions": 17843,
+      "clicks": 6280,
+      "ctr": 0.352,
+      "conversions": 856,
+      "spend": 5.12
+    },
+    {
+      "date": "2024-01-28",
+      "impressions": 15582,
+      "clicks": 5600,
+      "ctr": 0.3594,
+      "conversions": 777,
+      "spend": 4.8
+    },
+    {
+      "date": "2024-01-29",
+      "impressions": 13947,
+      "clicks": 5051,
+      "ctr": 0.3622,
+      "conversions": 691,
+      "spend": 4.13
+    },
+    {
+      "date": "2024-01-30",
+      "impressions": 14845,
+      "clicks": 5568,
+      "ctr": 0.3751,
+      "conversions": 775,
+      "spend": 4.83
+    },
+    {
+      "date": "2024-01-31",
+      "impressions": 14170,
+      "clicks": 5357,
+      "ctr": 0.3781,
+      "conversions": 713,
+      "spend": 4.32
+    }
+  ],
+  "week_over_week": [
+    {
+      "metric": "impressions",
+      "recent_7d": 104875.0,
+      "prior_7d": 112840.0,
+      "pct_change": -7.06
+    },
+    {
+      "metric": "clicks",
+      "recent_7d": 38557.0,
+      "prior_7d": 41831.0,
+      "pct_change": -7.83
+    },
+    {
+      "metric": "ctr",
+      "recent_7d": 0.3676,
+      "prior_7d": 0.3707,
+      "pct_change": -0.84
+    },
+    {
+      "metric": "conversions",
+      "recent_7d": 5140.0,
+      "prior_7d": 5707.0,
+      "pct_change": -9.94
+    },
+    {
+      "metric": "spend",
+      "recent_7d": 31.73,
+      "prior_7d": 35.69,
+      "pct_change": -11.1
+    }
+  ]
+}

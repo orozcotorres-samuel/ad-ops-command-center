@@ -239,6 +239,7 @@ PLANTED_ERROR_DRAFT = GeneratedReport(
 
 if __name__ == "__main__":
     import sys
+    from pathlib import Path
 
     metrics = get_metrics(last_n_days=14)
 
@@ -252,3 +253,13 @@ if __name__ == "__main__":
         result = run_pipeline(metrics, max_revisions=2, verbose=True)
 
     _print_summary_block(result)
+
+    # `--save PATH` writes the whole run to JSON. The Streamlit app (Step 7)
+    # replays a saved run instead of calling the API, so the deployed page
+    # costs nothing to visit. PipelineResult is a Pydantic model, so the
+    # saved file reloads into the exact same object.
+    if "--save" in sys.argv:
+        out = Path(sys.argv[sys.argv.index("--save") + 1])
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(result.model_dump_json(indent=2))
+        print(f"\nSaved this run to {out}")
