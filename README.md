@@ -6,6 +6,10 @@ Claude writes an ad-performance report. A second Claude call fact-checks every
 claim in it against real numbers in DuckDB. Any claim the data doesn't support
 goes back to the writer with the real value attached, for a targeted rewrite.
 
+📄 **[Visual explainer](docs/how-it-works.html)** — how it works in plain English,
+then the architecture, experimental design and limitations. Open the file locally,
+or view it published: https://claude.ai/code/artifact/a91ed742-878f-4bc5-b286-441c94c7edad
+
 ## The result
 
 Measured over **33 date ranges** (14-, 21- and 28-day windows), 66 pipeline runs,

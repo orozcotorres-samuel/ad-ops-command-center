@@ -1,0 +1,637 @@
+<title>Ad Ops Command Center — How it works</title>
+
+<style>
+  :root {
+    --paper:      #f4f6f8;
+    --card:       #ffffff;
+    --deep:       #eaeef2;
+    --ink:        #14181d;
+    --ink-soft:   #58626d;
+    --ink-faint:  #8b95a1;
+    --rule:       #dfe5eb;
+    --verified:   #1d6fd0;
+    --flagged:    #d2542f;
+    --verified-bg:#e8f1fc;
+    --flagged-bg: #fcece6;
+
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      --paper:      #0e1216;
+      --card:       #161c22;
+      --deep:       #11161b;
+      --ink:        #eef2f6;
+      --ink-soft:   #9aa5b1;
+      --ink-faint:  #6b7681;
+      --rule:       #242d36;
+      --verified:   #4d94ec;
+      --flagged:    #e87a4d;
+      --verified-bg:#132638;
+      --flagged-bg: #2c1a12;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #0e1216;
+    --card:       #161c22;
+    --deep:       #11161b;
+    --ink:        #eef2f6;
+    --ink-soft:   #9aa5b1;
+    --ink-faint:  #6b7681;
+    --rule:       #242d36;
+    --verified:   #4d94ec;
+    --flagged:    #e87a4d;
+    --verified-bg:#132638;
+    --flagged-bg: #2c1a12;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .75rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 .9rem;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(1.9rem, 5vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -.03em;
+    line-height: 1.08;
+    text-wrap: balance;
+    margin: 0 0 1.1rem;
+  }
+
+  h2 {
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    margin: 0 0 1.4rem;
+    padding-bottom: .7rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  h3 {
+    font-family: var(--mono);
+    font-size: .95rem;
+    font-weight: 700;
+    margin: 0 0 .7rem;
+    letter-spacing: -.01em;
+  }
+
+  .lede {
+    font-size: 1.2rem;
+    color: var(--ink-soft);
+    max-width: 34em;
+    margin: 0 0 1.4rem;
+    text-wrap: pretty;
+  }
+
+  .routing {
+    font-family: var(--mono);
+    font-size: .8rem;
+    color: var(--ink-faint);
+    border-left: 2px solid var(--rule);
+    padding-left: .8rem;
+    margin: 0;
+  }
+
+  p { margin: 0 0 1rem; max-width: 36em; }
+  p:last-child { margin-bottom: 0; }
+  .note { font-size: .95rem; color: var(--ink-soft); }
+
+  /* ---- pipeline flow ---- */
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .75rem;
+    align-items: stretch;
+  }
+  .stage {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1.1rem 1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+    position: relative;
+  }
+  .stage-num { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; color: var(--ink-faint); }
+  .stage-name { font-family: var(--mono); font-weight: 700; font-size: 1rem; letter-spacing: -.01em; }
+  .stage-who { font-family: var(--mono); font-size: .72rem; letter-spacing: .04em; color: var(--verified); }
+  .stage-what { font-size: .88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; max-width: none; }
+  .stage::after {
+    content: "→";
+    position: absolute; right: -.62rem; top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono); color: var(--ink-faint); font-size: .95rem; z-index: 1;
+  }
+  .stage:last-child::after { content: none; }
+
+  .loopback {
+    display: flex; align-items: center; gap: .8rem;
+    padding: .85rem 1rem;
+    border: 1px dashed var(--flagged);
+    border-radius: 3px;
+    background: var(--flagged-bg);
+    margin-top: .9rem;
+  }
+  .loopback .arrow { font-family: var(--mono); color: var(--flagged); font-weight: 700; white-space: nowrap; }
+  .loopback p { margin: 0; font-size: .9rem; color: var(--ink-soft); max-width: none; }
+  .loopback strong { color: var(--ink); }
+
+  /* ---- claim check ---- */
+  .checks { display: flex; flex-direction: column; gap: .4rem; }
+  .check {
+    display: grid; grid-template-columns: 4.6rem 1fr; gap: 1rem; align-items: start;
+    background: var(--card); border: 1px solid var(--rule);
+    border-left-width: 3px; border-radius: 3px; padding: .8rem 1rem;
+  }
+  .check.fail { border-left-color: var(--flagged); }
+  .check.pass { border-left-color: var(--verified); }
+  .verdict {
+    font-family: var(--mono); font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+    padding: .18rem .45rem; border-radius: 2px; text-align: center;
+  }
+  .check.fail .verdict { background: var(--flagged-bg); color: var(--flagged); }
+  .check.pass .verdict { background: var(--verified-bg); color: var(--verified); }
+  .claim { font-size: .93rem; }
+  .claim .said { display: block; }
+  .claim .truth { display: block; font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); margin-top: .3rem; }
+  .draft-label {
+    font-family: var(--mono); font-size: .74rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 .6rem; max-width: none;
+  }
+
+  /* ---- data + result ---- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .75rem; }
+  .cell { background: var(--card); border: 1px solid var(--rule); border-radius: 3px; padding: 1rem; }
+  .cell .val {
+    font-family: var(--mono); font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums; display: block; line-height: 1.2;
+  }
+  .cell .key { font-size: .82rem; color: var(--ink-soft); display: block; margin-top: .2rem; }
+
+  .result {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 1.8rem 1.5rem; display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;
+  }
+  .bignum {
+    font-family: var(--mono); font-size: clamp(2.4rem, 7vw, 3.6rem); font-weight: 700;
+    letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .bignum .from { color: var(--flagged); }
+  .bignum .to   { color: var(--verified); }
+  .bignum .sep  { color: var(--ink-faint); padding: 0 .15em; }
+  .result-note { flex: 1 1 16rem; }
+  .result-note p { font-size: .95rem; color: var(--ink-soft); }
+
+  ul.plain { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .7rem; }
+  ul.plain li { display: grid; grid-template-columns: 1.4rem 1fr; gap: .6rem; font-size: .95rem; color: var(--ink-soft); max-width: 38em; }
+  ul.plain li b { color: var(--ink); font-weight: 600; }
+  ul.plain .tick { font-family: var(--mono); color: var(--verified); font-weight: 700; font-size: .8rem; padding-top: .18rem; }
+
+  /* ---- technical half ---- */
+  .divider {
+    border-top: 2px solid var(--ink);
+    padding-top: 1.4rem;
+  }
+  .divider .eyebrow { margin-bottom: .5rem; }
+  .divider h2 { border-bottom: none; padding-bottom: 0; font-size: 1.4rem; margin-bottom: .6rem; }
+
+  pre {
+    font-family: var(--mono);
+    font-size: .78rem;
+    line-height: 1.65;
+    background: var(--deep);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    margin: 0 0 1rem;
+    color: var(--ink);
+  }
+  pre .c { color: var(--ink-faint); }
+  pre .k { color: var(--verified); }
+  pre .f { color: var(--flagged); }
+  code {
+    font-family: var(--mono);
+    font-size: .87em;
+    background: var(--deep);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: .08em .32em;
+  }
+
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.5rem; }
+  .col { background: var(--card); border: 1px solid var(--rule); border-radius: 3px; padding: 1.1rem 1.2rem 1.2rem; }
+  .col p { font-size: .9rem; color: var(--ink-soft); max-width: none; }
+  .col p:last-child { margin-bottom: 0; }
+  .col b { color: var(--ink); }
+
+  .qa {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--flagged);
+    border-radius: 3px;
+    padding: 1.2rem 1.3rem;
+  }
+  .qa .q {
+    font-family: var(--mono); font-weight: 700; font-size: .95rem;
+    margin: 0 0 .8rem; max-width: none;
+  }
+  .qa p { font-size: .93rem; color: var(--ink-soft); max-width: none; }
+
+  table {
+    width: 100%; border-collapse: collapse; font-size: .88rem;
+  }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 3px; background: var(--card); }
+  th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--rule); }
+  th {
+    font-family: var(--mono); font-size: .74rem; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--ink-faint); font-weight: 700;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  td .hi-bad { color: var(--flagged); font-weight: 700; }
+  td .hi-good { color: var(--verified); font-weight: 700; }
+
+  .tools { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .tool {
+    font-family: var(--mono); font-size: .78rem; padding: .32rem .6rem;
+    border: 1px solid var(--rule); border-radius: 2px; background: var(--card); color: var(--ink-soft);
+  }
+  .tool b { color: var(--ink); font-weight: 700; }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1.2rem; font-size: .85rem; color: var(--ink-faint); }
+  footer a { color: var(--verified); }
+
+  @media (max-width: 700px) {
+    .flow { grid-template-columns: 1fr; }
+    .stage::after { content: "↓"; right: 50%; top: auto; bottom: -.75rem; transform: translateX(50%); }
+    .check { grid-template-columns: 1fr; gap: .45rem; }
+    .verdict { justify-self: start; padding-inline: .55rem; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Ad Ops Command Center · Phase 1</p>
+    <h1>An AI that writes ad reports — and a second AI that checks every number in them.</h1>
+    <p class="lede">
+      Language models make up plausible-sounding figures. This pipeline catches them:
+      every claim in a generated report is checked against the real data, and anything
+      unsupported is sent back to be rewritten.
+    </p>
+    <p class="routing">Plain-English explainer first. Architecture, method and limitations from “Under the hood” down.</p>
+  </header>
+
+  <section>
+    <h2>How it works</h2>
+    <div class="flow">
+      <div class="stage">
+        <span class="stage-num">01</span>
+        <span class="stage-name">The data</span>
+        <span class="stage-who">DuckDB</span>
+        <p class="stage-what">Real ad performance numbers, queried into a fixed, structured record. This is the only source of truth.</p>
+      </div>
+      <div class="stage">
+        <span class="stage-num">02</span>
+        <span class="stage-name">The writer</span>
+        <span class="stage-who">Claude</span>
+        <p class="stage-what">Reads those numbers and writes two summaries — one for analysts, one in plain English.</p>
+      </div>
+      <div class="stage">
+        <span class="stage-num">03</span>
+        <span class="stage-name">The checker</span>
+        <span class="stage-who">Claude</span>
+        <p class="stage-what">Pulls out every factual claim in the write-up and marks it supported or not — against the data, not its own memory.</p>
+      </div>
+      <div class="stage">
+        <span class="stage-num">04</span>
+        <span class="stage-name">The report</span>
+        <span class="stage-who">Verified</span>
+        <p class="stage-what">Published only once every claim holds up against the numbers.</p>
+      </div>
+    </div>
+
+    <div class="loopback">
+      <span class="arrow">03 ──▶ 02</span>
+      <p>If anything fails, the flagged claims go <strong>back to the writer with the real values attached</strong> — fix exactly these, leave the rest alone. Capped at two rewrites, so it can never loop forever.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the checker actually does</h2>
+    <p class="note">A real run. The writer was handed a draft with errors planted in it; here is what came back.</p>
+
+    <p class="draft-label">First draft — 5 of 7 claims unsupported</p>
+    <div class="checks">
+      <div class="check pass">
+        <span class="verdict">PASS</span>
+        <span class="claim"><span class="said">“delivered 217,715 impressions”</span></span>
+      </div>
+      <div class="check fail">
+        <span class="verdict">FAIL</span>
+        <span class="claim">
+          <span class="said">“achieved an overall CTR of 55%”</span>
+          <span class="truth">Actual CTR is 36.9%, not 55%.</span>
+        </span>
+      </div>
+      <div class="check fail">
+        <span class="verdict">FAIL</span>
+        <span class="claim">
+          <span class="said">“on $4,200 spend”</span>
+          <span class="truth">Total spend is $67.42, not $4,200.</span>
+        </span>
+      </div>
+      <div class="check fail">
+        <span class="verdict">FAIL</span>
+        <span class="claim">
+          <span class="said">“impressions rose 30% week-over-week”</span>
+          <span class="truth">Impressions fell 7.06%. Wrong direction.</span>
+        </span>
+      </div>
+      <div class="check fail">
+        <span class="verdict">FAIL</span>
+        <span class="claim">
+          <span class="said">“the strongest fortnight of the quarter”</span>
+          <span class="truth">No quarterly data exists to support this.</span>
+        </span>
+      </div>
+    </div>
+
+    <p class="draft-label" style="margin-top:1.4rem;">After one rewrite — 7 of 7 pass</p>
+    <div class="checks">
+      <div class="check pass">
+        <span class="verdict">PASS</span>
+        <span class="claim">
+          <span class="said">“achieved an overall CTR of 36.9%”</span>
+          <span class="truth">Corrected to the real figure.</span>
+        </span>
+      </div>
+      <div class="check pass">
+        <span class="verdict">PASS</span>
+        <span class="claim">
+          <span class="said">“impressions fell 7.06%”</span>
+          <span class="truth">Direction corrected.</span>
+        </span>
+      </div>
+      <div class="check pass">
+        <span class="verdict">PASS</span>
+        <span class="claim">
+          <span class="said">— the quarterly claim is gone —</span>
+          <span class="truth">Removed rather than invented. It couldn't be supported, so it was dropped.</span>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What's being analysed</h2>
+    <p class="note">Real advertising data — 500,000 ad impressions from the Criteo attribution dataset, covering 31 days.</p>
+    <div class="grid">
+      <div class="cell"><span class="val">217,715</span><span class="key">impressions served</span></div>
+      <div class="cell"><span class="val">80,388</span><span class="key">clicks</span></div>
+      <div class="cell"><span class="val">10,847</span><span class="key">conversions</span></div>
+      <div class="cell"><span class="val">31</span><span class="key">days of data</span></div>
+    </div>
+    <p class="note" style="margin-top:1rem;">
+      Plus click-through rate, spend, and week-over-week change — the everyday numbers
+      an ad operations team reports on.
+    </p>
+  </section>
+
+  <section>
+    <h2>The result</h2>
+    <div class="result">
+      <div class="bignum"><span class="from">100%</span><span class="sep">→</span><span class="to">0%</span></div>
+      <div class="result-note">
+        <p>
+          Reports written <strong style="color:var(--ink)">without</strong> the real numbers contained a false claim
+          <strong style="color:var(--ink)">every single time</strong>. Reports written with them: never.
+          Measured across 33 different date ranges — 66 runs, no cherry-picking.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why this is different</h2>
+    <ul class="plain">
+      <li><span class="tick">01</span><span><b>It measures itself.</b> Most AI demos claim to reduce hallucination. This one puts a number on it, and publishes every run behind that number.</span></li>
+      <li><span class="tick">02</span><span><b>The fix is specific, not vague.</b> The writer isn't told “try again” — it's handed the exact claims that failed, with the correct values, and told to change only those.</span></li>
+      <li><span class="tick">03</span><span><b>It's a workflow, not an agent.</b> The steps are fixed in code; the AI only writes and checks. That constraint is deliberate — a predictable path is what makes the result measurable in the first place.</span></li>
+      <li><span class="tick">04</span><span><b>Honest about its limits.</b> 0% means the checker found nothing wrong across 33 runs — not that hallucination is now impossible.</span></li>
+    </ul>
+  </section>
+
+  <!-- ================= TECHNICAL ================= -->
+
+  <section class="divider">
+    <p class="eyebrow">Under the hood</p>
+    <h2>How it's built, and why those choices</h2>
+    <p class="note">The implementation detail behind the summary above — the pattern, the experimental design, and what the result does and doesn't establish.</p>
+  </section>
+
+  <section>
+    <h2>The contract between stages</h2>
+    <p class="note">
+      Every stage hands off a typed object, not free text. The model's output is constrained to a
+      schema at the API level (<code>messages.parse</code> with a Pydantic model), so there is no
+      regex parsing and no “the model returned prose this time” failure mode.
+    </p>
+<pre><span class="c"># 1. Ground truth — computed in SQL, never by the model</span>
+<span class="k">class</span> MetricsSummary:
+    start_date, end_date: str
+    total_impressions, total_clicks, total_conversions: int
+    overall_ctr, total_spend: float
+    days: list[DailyMetric]          <span class="c"># per-day breakdown</span>
+    week_over_week: list[WeekOverWeek]
+
+<span class="c"># 2. What the writer must produce</span>
+<span class="k">class</span> GeneratedReport:
+    technical_summary: str
+    plain_summary: str
+
+<span class="c"># 3. What the checker must produce — one verdict per claim</span>
+<span class="k">class</span> ClaimCheck:
+    claim: str          <span class="c"># quoted verbatim from the summary</span>
+    supported: bool
+    explanation: str    <span class="c"># if unsupported, the REAL value</span>
+
+<span class="k">class</span> EvaluationResult:
+    claims: list[ClaimCheck]
+    <span class="f">@property</span> unsupported            <span class="c"># -> list[ClaimCheck]</span>
+    <span class="f">@property</span> has_unsupported_claims <span class="c"># -> bool  (drives the loop)</span></pre>
+    <p class="note">
+      The important detail is <code>explanation</code> carrying the true value. That's what makes the
+      retry corrective rather than a reroll — the writer receives the right answer, not just a rejection.
+    </p>
+  </section>
+
+  <section>
+    <h2>The loop</h2>
+    <div class="cols">
+      <div class="col">
+        <h3>Termination is structural</h3>
+        <p>The loop is a bounded <code>for</code> range, not a <code>while</code> on model output. Worst case is 3 drafts and 6 API calls; there is no prompt phrasing or model behaviour that can extend it.</p>
+        <p><b>Why it matters:</b> an unbounded self-correcting loop is a runaway cost incident waiting to happen.</p>
+      </div>
+      <div class="col">
+        <h3>The retry prompt is narrow</h3>
+        <p>The reviser gets the ground-truth JSON, its own previous draft, and a numbered list of only the failed claims with their real values — plus an instruction to keep everything already correct unchanged.</p>
+        <p><b>Observed effect:</b> when a claim can't be supported at all, it gets <b>deleted</b> rather than replaced with a guess.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The experiment</h2>
+    <p class="note">
+      Two arms, one difference. Both run the identical evaluator and the identical correction loop,
+      so the only variable is what the writer was given.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Arm</th><th>What the writer receives</th><th>First-draft rate</th><th>Claim-level</th><th>After loop</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Ungrounded</b></td>
+            <td>Date range + total impressions only</td>
+            <td class="num"><span class="hi-bad">100%</span></td>
+            <td class="num">85.8%</td>
+            <td class="num">0%</td>
+          </tr>
+          <tr>
+            <td><b>Grounded</b></td>
+            <td>Full metrics object as JSON</td>
+            <td class="num"><span class="hi-good">0%</span></td>
+            <td class="num">0%</td>
+            <td class="num">0%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:1rem;">
+      <b>Why the ungrounded arm still gets one real number.</b> Handing the model nothing would make
+      100% true by construction and prove nothing. Giving it the period and the headline volume, then
+      asking for a full report, reproduces the realistic failure case: someone knows the top-line
+      figure and asks a model to fill in the rest. Every remaining figure — CTR, spend, conversions,
+      week-over-week direction — has to be invented.
+    </p>
+    <p class="note">
+      <b>Three rates, because they answer different questions.</b> <i>First-draft</i> is the share of
+      reports with at least one bad claim. <i>Claim-level</i> is the share of individual claims that
+      were wrong, which measures severity rather than mere presence. <i>After loop</i> is what survived
+      the pipeline.
+    </p>
+    <p class="note">
+      <b>33 date ranges × 2 arms = 66 runs</b>, spanning 14-, 21- and 28-day windows so the result
+      isn't an artefact of one window size. Zero runs errored. Both arms use
+      <code>claude-opus-4-8</code>.
+    </p>
+  </section>
+
+  <section>
+    <h2>The obvious objection</h2>
+    <div class="qa">
+      <p class="q">“You're using Claude to check Claude. Isn't that circular?”</p>
+      <p>
+        It's the right question, and it's a real limitation — but the two tasks aren't symmetric.
+        The writer performs <b>generation</b>: it must produce figures. The checker performs
+        <b>extraction and comparison</b>: the ground truth is in its context window, and its job is
+        to pull out each claim and compare it against a number that's sitting right there. That's a
+        substantially easier task, and a different failure mode.
+      </p>
+      <p>
+        It's also verifiable rather than taken on faith. Feed the checker a draft with known planted
+        errors and confirm it flags exactly those — that's the <code>--demo</code> path, and it's the
+        run shown further up this page.
+      </p>
+      <p>
+        What it does <b>not</b> rule out: a claim both models are wrong about in the same direction.
+        A deterministic assertion layer for numeric claims — parse the figure, compare to the
+        metrics object in Python, no model involved — would close that gap and is the natural next
+        hardening step.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Engineering notes</h2>
+    <div class="cols">
+      <div class="col">
+        <h3>The sweep is resumable</h3>
+        <p>Results are written after <b>every</b> run and completed runs are skipped on re-invocation. An interrupted sweep loses at most the single run in flight, and re-running a finished sweep makes zero API calls.</p>
+        <p>This was not hypothetical — a run was killed at 37 of 66 and resumed without repeating paid work.</p>
+      </div>
+      <div class="col">
+        <h3>Writes are atomic</h3>
+        <p>Saving after every run means a plain truncating write could be interrupted mid-write and destroy all 66 results. Results are written to a temp file and renamed, so the file is always either the complete old version or the complete new one.</p>
+      </div>
+      <div class="col">
+        <h3>Failures are isolated</h3>
+        <p>A run that raises records an error row and the sweep continues, rather than losing the whole batch to one transient API error. Errored runs are retried on resume; successful ones never are.</p>
+      </div>
+      <div class="col">
+        <h3>Cheap to reproduce</h3>
+        <p>The full 66-run sweep costs roughly <b>$4</b> and about 25 minutes. Every run is committed as JSON, so the headline number can be reprinted for free without touching the API.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What this doesn't establish</h2>
+    <ul class="plain">
+      <li><span class="tick">01</span><span><b>0% is a ceiling, not a proof.</b> It means the checker found nothing unsupported in 33 runs on this dataset — not that grounding makes hallucination impossible.</span></li>
+      <li><span class="tick">02</span><span><b>One dataset, one domain.</b> Criteo attribution data, one metric schema. The pattern should generalise; the number is not claimed to.</span></li>
+      <li><span class="tick">03</span><span><b>Both arms share a model.</b> The rates describe <code>claude-opus-4-8</code>. A weaker writer would likely hallucinate even when grounded.</span></li>
+      <li><span class="tick">04</span><span><b>The checker is the instrument.</b> It is deliberately not run on a cheaper model — that would reduce the claim to “as judged by a cheaper fact-checker.”</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Built with</h2>
+    <div class="tools">
+      <span class="tool"><b>Python</b></span>
+      <span class="tool"><b>Claude API</b> · structured outputs, <code>messages.parse</code></span>
+      <span class="tool"><b>DuckDB</b> · in-process SQL over 500k rows</span>
+      <span class="tool"><b>Pydantic</b> · the schema every stage is held to</span>
+      <span class="tool"><b>Streamlit</b> + <b>Altair</b> · read-only dashboard</span>
+    </div>
+  </section>
+
+  <footer>
+    Phase 1 of 3. Next: an OpenRTB auction simulator, then connecting the two.
+  </footer>
+
+</div>
